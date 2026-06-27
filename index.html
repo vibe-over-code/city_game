@@ -174,7 +174,6 @@
     .bar-eco i { background: linear-gradient(90deg, var(--eco-accent-2), var(--eco-accent)); }
     .bar-mood i { background: linear-gradient(90deg, #b39b59, var(--eco-accent)); }
 
-    /* Блок управления финансами */
     .control-block {
       background: rgba(0,0,0,0.2);
       padding: 12px;
@@ -320,7 +319,6 @@
   </div>
 
   <script>
-    // Стартовые дружелюбные параметры
     let state = {
       budget: 2.5,
       indIncome: 80,
@@ -330,7 +328,6 @@
       hasEco: false
     };
 
-    // Параметры для ползунка [Низкая, Средняя, Высокая]
     const taxConfigs = {
       1: { money: 0.5, moodPen: 2, label: "Низкая", desc: "Мягкие налоги (-2% настроения)" },
       2: { money: 1.0, moodPen: 5, label: "Средняя", desc: "Обычные налоги (-5% настроения)" },
@@ -365,7 +362,6 @@
     const taxLabel = document.getElementById('tax-label');
     const taxDesc = document.getElementById('tax-desc');
 
-    // Логика ползунка
     taxSlider.addEventListener('input', (e) => {
       currentTaxLevel = e.target.value;
       const conf = taxConfigs[currentTaxLevel];
@@ -399,7 +395,6 @@
       btns.eco.disabled = state.budget < 3.0 || !state.hasResearch || state.hasEco;
       btns.shutdown.disabled = !state.hasEco;
 
-      // Мягкое наказание за бунт (игра подыгрывает)
       if (state.mood <= 0) {
         alert("Прошли небольшие митинги недовольных. Мэрия потратила $0.5M на урегулирование.");
         state.mood = 20;
@@ -428,9 +423,9 @@
       if (state.budget >= 3.0) {
         state.budget -= 3.0;
         state.hasEco = true;
-        state.ecoIncome += 60; // Эко приносит много денег
+        state.ecoIncome += 60;
         state.indIncome -= 20;
-        state.mood += 45; // Сразу сильно бустит настроение
+        state.mood += 45;
         ui.ecoZone.classList.add('active'); 
         btns.eco.innerText = "Эко-Кластер Работает";
         updateUI();
