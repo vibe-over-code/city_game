@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Эко-Трансформация</title>
+  <style>
+    :root {
+      --bg: #1a1714;
+      --panel: rgba(26, 22, 18, 0.88);
+      --line: rgba(255, 170, 100, 0.15);
+      --text: #f0e6d5;
+      --muted: #a69a8a;
+      --eco-accent: #52c488;
+      --eco-accent-2: #349662;
+      --ind-accent: #d97742;
+      --warn: #e65c5c;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; padding: 0; }
+    body {
+      font: 15px/1.4 "Segoe UI", system-ui, sans-serif;
+      color: var(--text);
+      background: linear-gradient(180deg, #14110e 0%, #1a1714 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .frame {
+      width: 100%;
+      max-width: 1200px;
+      height: 90vh;
+      max-height: 800px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding: 16px;
+      border-radius: 24px;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent 18%), var(--panel);
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.4);
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .badge, .chip, .btn {
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.03);
+      color: var(--text);
+      border-radius: 999px;
+    }
+
+    .badge {
+      padding: 10px 16px;
+      background: rgba(217, 119, 66, 0.1);
+      border-color: rgba(217, 119, 66, 0.2);
+      font-weight: bold;
+    }
+
+    .hud {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .chip {
+      padding: 8px 16px;
+      text-align: center;
+    }
+
+    .chip b {
+      display: block;
+      font-size: 18px;
+      margin-top: 4px;
+    }
+
+    .main {
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 16px;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .map, .panel {
+      border-radius: 22px;
+      border: 1px solid rgba(255,255,255,0.06);
+      background: rgba(15, 12, 10, 0.6);
+      position: relative;
+    }
+
+    .map {
+      overflow: hidden;
+      background: linear-gradient(180deg, #26221d 0%, #171411 100%);
+    }
+
+    .smog-layer {
+      position: absolute;
+      inset: 0;
+      background: 
+        radial-gradient(circle at 30% 40%, rgba(138, 115, 94, 0.5), transparent 60%),
+        radial-gradient(circle at 70% 60%, rgba(105, 90, 75, 0.6), transparent 70%);
+      mix-blend-mode: multiply;
+      pointer-events: none;
+      z-index: 2;
+      transition: opacity 1s ease;
+      opacity: 1; 
+    }
+
+    .grid-bg {
+      position: absolute;
+      inset: 0;
+      opacity: 0.1;
+      background:
+        linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
+      background-size: 72px 72px;
+    }
+
+    .zone {
+      position: absolute;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.05);
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,0.5);
+      transition: all 0.5s ease;
+    }
+
+    .factory-old { left: 10%; top: 15%; width: 25%; height: 25%; background: linear-gradient(180deg, rgba(94, 76, 61, 0.9), rgba(41, 31, 23, 0.95)); border-color: rgba(217, 119, 66, 0.3); }
+    .coal-plant { left: 65%; top: 50%; width: 22%; height: 25%; background: linear-gradient(180deg, rgba(74, 62, 54, 0.9), rgba(28, 22, 18, 0.95)); border-color: rgba(230, 92, 92, 0.3); }
+    .housing { left: 38%; top: 18%; width: 22%; height: 20%; background: linear-gradient(180deg, rgba(82, 85, 78, 0.9), rgba(30, 32, 29, 0.95)); }
+    .research { left: 72%; top: 12%; width: 18%; height: 18%; background: linear-gradient(180deg, rgba(61, 107, 133, 0.9), rgba(22, 38, 48, 0.95)); }
+    
+    .eco-plant { left: 15%; top: 55%; width: 20%; height: 20%; background: linear-gradient(180deg, rgba(82, 196, 136, 0.1), rgba(20, 48, 33, 0.3)); border-color: rgba(255,255,255,0.1); border-style: dashed; }
+    .eco-plant.active { background: linear-gradient(180deg, rgba(82, 196, 136, 0.7), rgba(20, 48, 33, 0.9)); border-color: var(--eco-accent); border-style: solid; box-shadow: 0 0 20px rgba(82, 196, 136, 0.2); }
+
+    .center { left: 42%; top: 45%; width: 18%; height: 18%; border-radius: 50%; background: radial-gradient(circle, rgba(200,190,170,0.8), rgba(20,18,15,0.9) 70%); }
+
+    .label {
+      position: absolute;
+      left: 8px;
+      bottom: 8px;
+      font-size: 11px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.8);
+      background: rgba(0,0,0,0.6);
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+
+    .panel {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      overflow-y: auto;
+    }
+
+    .title { margin: 0; font-size: 18px; font-weight: 600; }
+
+    .stat-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 12px; text-transform: uppercase; color: var(--muted); }
+    .bar { height: 8px; border-radius: 999px; background: rgba(255,255,255,0.05); overflow: hidden; }
+    .bar i { display: block; height: 100%; border-radius: inherit; transition: width 0.3s ease, background 0.3s ease; }
+    
+    .bar-ind i { background: linear-gradient(90deg, var(--ind-accent), var(--warn)); }
+    .bar-eco i { background: linear-gradient(90deg, var(--eco-accent-2), var(--eco-accent)); }
+    .bar-mood i { background: linear-gradient(90deg, #b39b59, var(--eco-accent)); }
+
+    /* Блок управления финансами */
+    .control-block {
+      background: rgba(0,0,0,0.2);
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.05);
+      margin-top: 8px;
+    }
+
+    .slider-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    input[type=range] {
+      width: 100%;
+      accent-color: var(--ind-accent);
+      margin-bottom: 12px;
+      cursor: pointer;
+    }
+
+    .actions { display: flex; flex-direction: column; gap: 10px; margin-top: auto; }
+
+    .btn {
+      padding: 12px;
+      text-align: left;
+      cursor: pointer;
+      font: inherit;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      transition: 0.2s;
+    }
+    .btn small { color: var(--muted); font-size: 11px; }
+    .btn:hover:not(:disabled) { background: rgba(255,255,255,0.08); transform: translateY(-2px); }
+    .btn:active:not(:disabled) { transform: translateY(0); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn-profit { border-color: rgba(217, 119, 66, 0.4); background: rgba(217, 119, 66, 0.05); margin-top: 4px;}
+    .btn-research { border-color: rgba(61, 107, 133, 0.4); background: rgba(61, 107, 133, 0.05); }
+    .btn-eco { border-color: rgba(82, 196, 136, 0.4); background: rgba(82, 196, 136, 0.05); }
+    .btn-shutdown { border-color: var(--eco-accent); background: rgba(82, 196, 136, 0.15); }
+
+    .win-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.8);
+      backdrop-filter: blur(8px);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      border-radius: 22px;
+      text-align: center;
+      padding: 20px;
+    }
+    .win-overlay h2 { color: var(--eco-accent); font-size: 32px; margin-bottom: 10px; }
+
+    @media (max-width: 900px) {
+      .main { grid-template-columns: 1fr; grid-template-rows: 1.5fr 1fr; }
+      .frame { height: 100vh; max-height: none; border-radius: 0; border: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <div class="topbar">
+      <div class="badge" id="city-status">Старый Пром-Город</div>
+      <div class="hud">
+        <div class="chip">Бюджет<b id="val-budget">$2.5M</b></div>
+        <div class="chip">ROI<b id="val-roi" style="color: var(--ind-accent);">+5%</b></div>
+        <div class="chip">Жители<b id="val-mood" style="color: var(--text);">Терпимо</b></div>
+      </div>
+    </div>
+
+    <div class="main">
+      <div class="map">
+        <div class="smog-layer" id="smog"></div>
+        <div class="grid-bg"></div>
+        
+        <div class="zone factory-old"><div class="label">Хим. Завод</div></div>
+        <div class="zone housing"><div class="label">Жилой район</div></div>
+        <div class="zone coal-plant" id="coal-plant"><div class="label">Угольная ТЭЦ</div></div>
+        <div class="zone research"><div class="label">НИИ</div></div>
+        <div class="zone eco-plant" id="eco-plant"><div class="label">Эко-Кластер</div></div>
+        <div class="zone center"><div class="label">Центр</div></div>
+
+        <div class="win-overlay" id="win-screen">
+          <h2>Трансформация успешна!</h2>
+          <p>Инвесторы получили экологичный и прибыльный актив,<br>а жители наслаждаются чистым воздухом.</p>
+          <button class="btn btn-eco" style="margin-top: 20px; text-align: center;" onclick="location.reload()">Начать заново</button>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <h2 class="title">Сводка активов</h2>
+        
+        <div>
+          <div class="stat-row"><span>Грязное произв.</span><span id="text-ind">80%</span></div>
+          <div class="bar bar-ind"><i id="bar-ind" style="width: 80%"></i></div>
+        </div>
+        <div>
+          <div class="stat-row"><span>Эко-сектор</span><span id="text-eco">0%</span></div>
+          <div class="bar bar-eco"><i id="bar-eco" style="width: 0%"></i></div>
+        </div>
+        <div>
+          <div class="stat-row"><span>Удовлетворенность</span><span id="text-mood">40%</span></div>
+          <div class="bar bar-mood"><i id="bar-mood" style="width: 40%"></i></div>
+        </div>
+
+        <div class="actions">
+          <div class="control-block">
+            <div class="slider-header">
+              <span>Агрессивность сбора:</span>
+              <span id="tax-label" style="color: #fff;">Средняя</span>
+            </div>
+            <input type="range" id="tax-slider" min="1" max="3" value="2" step="1">
+            <button class="btn btn-profit" id="btn-profit" onclick="takeProfit()">
+              Изъять прибыль (+$1.0M)
+              <small id="tax-desc">Обычные налоги (-5% настроения)</small>
+            </button>
+          </div>
+
+          <button class="btn btn-research" id="btn-research" onclick="research()" disabled>
+            Вложить в R&D (-$2.0M)
+            <small>Открыть новые технологии</small>
+          </button>
+          <button class="btn btn-eco" id="btn-eco" onclick="buildEco()" disabled>
+            Начать замещение (-$3.0M)
+            <small>Построить Эко-Кластер</small>
+          </button>
+          <button class="btn btn-shutdown" id="btn-shutdown" onclick="shutdown()" disabled>
+            Отключить старую ТЭЦ
+            <small>Завершить трансформацию города</small>
+          </button>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    // Стартовые дружелюбные параметры
+    let state = {
+      budget: 2.5,
+      indIncome: 80,
+      ecoIncome: 0,
+      mood: 40,
+      hasResearch: false,
+      hasEco: false
+    };
+
+    // Параметры для ползунка [Низкая, Средняя, Высокая]
+    const taxConfigs = {
+      1: { money: 0.5, moodPen: 2, label: "Низкая", desc: "Мягкие налоги (-2% настроения)" },
+      2: { money: 1.0, moodPen: 5, label: "Средняя", desc: "Обычные налоги (-5% настроения)" },
+      3: { money: 1.5, moodPen: 12, label: "Высокая", desc: "Жесткий отжим (-12% настроения)" }
+    };
+    let currentTaxLevel = 2;
+
+    const ui = {
+      budget: document.getElementById('val-budget'),
+      roi: document.getElementById('val-roi'),
+      moodLabel: document.getElementById('val-mood'),
+      barInd: document.getElementById('bar-ind'),
+      textInd: document.getElementById('text-ind'),
+      barEco: document.getElementById('bar-eco'),
+      textEco: document.getElementById('text-eco'),
+      barMood: document.getElementById('bar-mood'),
+      textMood: document.getElementById('text-mood'),
+      smog: document.getElementById('smog'),
+      ecoZone: document.getElementById('eco-plant'),
+      coalZone: document.getElementById('coal-plant'),
+      status: document.getElementById('city-status')
+    };
+
+    const btns = {
+      profit: document.getElementById('btn-profit'),
+      research: document.getElementById('btn-research'),
+      eco: document.getElementById('btn-eco'),
+      shutdown: document.getElementById('btn-shutdown')
+    };
+
+    const taxSlider = document.getElementById('tax-slider');
+    const taxLabel = document.getElementById('tax-label');
+    const taxDesc = document.getElementById('tax-desc');
+
+    // Логика ползунка
+    taxSlider.addEventListener('input', (e) => {
+      currentTaxLevel = e.target.value;
+      const conf = taxConfigs[currentTaxLevel];
+      taxLabel.innerText = conf.label;
+      taxDesc.innerText = conf.desc;
+      btns.profit.innerHTML = `Изъять прибыль (+$${conf.money.toFixed(1)}M)<small id="tax-desc">${conf.desc}</small>`;
+    });
+
+    function updateUI() {
+      ui.budget.innerText = `$${state.budget.toFixed(1)}M`;
+      ui.barInd.style.width = `${state.indIncome}%`;
+      ui.textInd.innerText = `${state.indIncome}%`;
+      ui.barEco.style.width = `${state.ecoIncome}%`;
+      ui.textEco.innerText = `${state.ecoIncome}%`;
+      ui.barMood.style.width = `${Math.max(0, state.mood)}%`;
+      ui.textMood.innerText = `${Math.max(0, state.mood)}%`;
+
+      let roi = (state.indIncome * 0.1) + (state.ecoIncome * 0.3);
+      ui.roi.innerText = `+${roi.toFixed(1)}%`;
+      ui.roi.style.color = state.ecoIncome > state.indIncome ? "var(--eco-accent)" : "var(--text)";
+
+      if (state.mood <= 15) { ui.moodLabel.innerText = "Угроза бунта"; ui.moodLabel.style.color = "var(--warn)"; }
+      else if (state.mood < 50) { ui.moodLabel.innerText = "Терпимо"; ui.moodLabel.style.color = "var(--text)"; }
+      else { ui.moodLabel.innerText = "Счастливы"; ui.moodLabel.style.color = "var(--eco-accent)"; }
+
+      let smogOpacity = state.indIncome / 100;
+      if (state.hasEco) smogOpacity -= 0.4;
+      ui.smog.style.opacity = Math.max(0, smogOpacity);
+
+      btns.research.disabled = state.budget < 2.0 || state.hasResearch;
+      btns.eco.disabled = state.budget < 3.0 || !state.hasResearch || state.hasEco;
+      btns.shutdown.disabled = !state.hasEco;
+
+      // Мягкое наказание за бунт (игра подыгрывает)
+      if (state.mood <= 0) {
+        alert("Прошли небольшие митинги недовольных. Мэрия потратила $0.5M на урегулирование.");
+        state.mood = 20;
+        state.budget = Math.max(0, state.budget - 0.5);
+        updateUI();
+      }
+    }
+
+    function takeProfit() {
+      const conf = taxConfigs[currentTaxLevel];
+      state.budget += conf.money;
+      state.mood -= conf.moodPen;
+      updateUI();
+    }
+
+    function research() {
+      if (state.budget >= 2.0) {
+        state.budget -= 2.0;
+        state.hasResearch = true;
+        btns.research.innerText = "R&D Завершено";
+        updateUI();
+      }
+    }
+
+    function buildEco() {
+      if (state.budget >= 3.0) {
+        state.budget -= 3.0;
+        state.hasEco = true;
+        state.ecoIncome += 60; // Эко приносит много денег
+        state.indIncome -= 20;
+        state.mood += 45; // Сразу сильно бустит настроение
+        ui.ecoZone.classList.add('active'); 
+        btns.eco.innerText = "Эко-Кластер Работает";
+        updateUI();
+      }
+    }
+
+    function shutdown() {
+      state.indIncome = 0;
+      state.ecoIncome = 100;
+      state.mood = 100;
+      ui.coalZone.style.display = 'none'; 
+      ui.status.innerText = "Зеленый Мегаполис";
+      ui.status.style.background = "rgba(82, 196, 136, 0.2)";
+      ui.status.style.borderColor = "var(--eco-accent)";
+      
+      updateUI();
+      document.getElementById('win-screen').style.display = 'flex';
+    }
+
+    updateUI();
+  </script>
+</body>
+</html>
