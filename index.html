@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Эко-Трансформация</title>
+  <title>Urban eco evolution</title>
   <style>
     :root {
       --bg: #1a1714;
@@ -396,9 +396,9 @@
       btns.shutdown.disabled = !state.hasEco;
 
       if (state.mood <= 0) {
-        alert("Прошли небольшие митинги недовольных. Мэрия потратила $0.5M на урегулирование.");
+        alert("Прошли митинги недовольных. Мэрия потратила $3M на урегулирование.");
         state.mood = 20;
-        state.budget = Math.max(0, state.budget - 0.5);
+        state.budget = Math.max(0, state.budget - 3);
         updateUI();
       }
     }
